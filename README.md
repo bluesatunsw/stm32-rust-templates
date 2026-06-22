@@ -1,2 +1,4 @@
-# stm32-rust-templates
-Get started with Rust firmware for STM32s quick
+# STM32 Rust templates
+
+Firmware quickstart for some of the STM32s that Bluesat uses. See the
+template-specific READMEs for more information.

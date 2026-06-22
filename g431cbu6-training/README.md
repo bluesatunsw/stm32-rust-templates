@@ -6,14 +6,35 @@ found on the [G431 WeAct dev boards](https://www.aliexpress.com/item/10050070792
 
 ## Development commands
 
-- Flash and run with defmt logging output: `cargo run --release`
-- Flash, then run with defmt logging output and GDB simultaneously: `cargo embed --release`
-    - Connect GDB with `gdb-multiarch -x cargo.gdb`
+Flash and run with defmt logging output:
+
+```
+cargo run --release
+```
+
+Flash, then run with both defmt logging output and a GDB server simultaneously:
+
+```
+cargo embed --release
+```
+
+With GDB server running, attach GDB (sub in `gdb-multiarch` or `arm-none-eabi-gdb` as appropriate):
+
+```
+gdb -x attach.gdb
+```
+
+With GDB server running, attach GDB, reset and halt on first instruction:
+
+```
+gdb -x reset.gdb
+```
 
 ## Notes
 
 - Requires probe-rs-tools and [`flip-link`](https://github.com/knurling-rs/flip-link)
 - Release build uses slightly more than 2 KB of flash
+    - `defmt` setup takes up over half of this
 - Uses `stm32g4xx-hal` from Git, not Bluesat's version; does not enable fdcan
 - Uses `panic_probe`: program will HardFault on panic
     - Use `defmt::panic!` in your code instead of regular `panic!` to get panic
