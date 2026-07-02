@@ -113,6 +113,9 @@ fn main() -> ! {
             pwr
         );
 
+    defmt::debug!("Initialised memory allocator and configured clock");
+    defmt::trace!("Setting up pins...");
+
     // Set up pins.
     // NOTE: remove ones you don't use
     let gpioa = dp.GPIOA.split(&mut rcc);
@@ -120,7 +123,7 @@ fn main() -> ! {
     let gpioc = dp.GPIOC.split(&mut rcc);
     let gpiod = dp.GPIOD.split(&mut rcc);
 
-    // Initialise device drivers.
+    defmt::debug!("Setting up LED driver...");
     let mut argb = argb::Controller::new(
         // NOTE: change these to the pin and USART that the LEDs are on
         dp.USART1,
@@ -128,7 +131,9 @@ fn main() -> ! {
         DEFAULT_BRIGHTNESS,
         &mut rcc,
     );
+    defmt::debug!("Setting up microsecond clock...");
     let clock = clock::MicrosecondClock::new(dp.TIM2, &mut rcc);
+    defmt::debug!("Setting up FDCAN driver...");
     let can = CanDriver::new(
         // NOTE: change these to the pins and FDCAN that the FDCAN transceiver is on
         dp.FDCAN1,
@@ -137,7 +142,7 @@ fn main() -> ! {
         &mut rcc,
     );
     
-    // Initialise Cyphal (canadensis) node.
+    defmt::debug!("Setting up core Cyphal node...");
     let id = CanNodeId::from_truncating(NODE_ID);
     let transmitter = CanTransmitter::new(Mtu::CanFd64);
     let receiver = CanReceiver::new(id);
@@ -153,6 +158,7 @@ fn main() -> ! {
 
     // Node initialisation is a non-recoverable error and should only happen if we run out of
     // memory or the hardware is completely broken, hence all the unwrapping.
+    defmt::debug!("Setting up basic Cyphal node...");
     let mut node = BasicNode::new(
         core_node,
         GetInfoResponse {
@@ -178,6 +184,7 @@ fn main() -> ! {
     // .unwrap();
 
     // NOTE: add calls like the following to publish specific messages
+    defmt::trace!("Starting publication of LED messages...");
     node.start_publishing(LED_SUBJECT, 10.millis(), Priority::Nominal).unwrap();
 
     // Start the superloop.
@@ -189,6 +196,7 @@ fn main() -> ! {
     let subsystem = RefCell::new(Subsystem);
     let mut comms_handler = CommsHandler { subsystem: &subsystem };
 
+    defmt::info!("System initialised. Entering superloop...");
     let mut hue: u16 = 0;
     let mut cycles = 0;
     loop {
@@ -203,6 +211,7 @@ fn main() -> ! {
             .clock()
             .advance_if_elapsed(&mut tim_heartbeat, HEARTBEAT_PERIOD_US.micros())
         {
+            defmt::debug!("Publishing node heartbeat...");
             node.run_per_second_tasks().unwrap();
         }
         
@@ -210,6 +219,7 @@ fn main() -> ! {
                 .clock()
                 .advance_if_elapsed(&mut tim_telem, TELEM_PERIOD_US.micros())
         {
+            defmt::trace!("Publishing LED telemetry...");
             node.publish(
                 LED_SUBJECT,
                 &natural8_1_0::Natural8 {
@@ -251,6 +261,7 @@ fn main() -> ! {
             let col4 = hue2color((hue + 48) % u8::MAX as u16);
             let col5 = hue2color((hue + 64) % u8::MAX as u16);
 
+            defmt::trace!("Refreshing LEDs...");
             argb.display(&[col1, col2, col3, col4, col5]);
             
             if hue == 0 {
